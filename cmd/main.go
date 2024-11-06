@@ -24,6 +24,17 @@ type Config struct {
 	Port       uint32
 }
 
+func Right(str string, num int) string {
+	if num <= 0 {
+		return ``
+	}
+	max := len(str)
+	if num > max {
+		num = max
+	}
+	num = max - num
+	return str[num:]
+}
 func einvoiceinfo(ctx echo.Context) (err error) {
 	docNumber := ctx.Param("DocNumber")
 	ii, err := db.GetInvoiceInfo(docNumber)
@@ -49,34 +60,33 @@ func PORecords(ctx echo.Context) (err error) {
 	log.Infof("Kayıt sayısı: %d", len(poRecords))
 
 	soStr := ""
-	if fileType == "so" {
-		for _, poRecord := range poRecords {
-			partNumber := strings.Replace(poRecord.PartNumber, "M", "", -1)
-			partNumber = strings.Replace(partNumber, " ", "", -1)
-			partNumber = strings.Replace(partNumber, "/", "", -1)
-			soStr = soStr + fmt.Sprintf("%s\t%.0f\t%.0f\n", partNumber, poRecord.QuantityRequired, poRecord.WIPLineOrPONo)
-		}
+	if fileType == "xfr" {
+		soStr = "Assist.XFR|AutolineAssist||\n"
 	}
 	if fileType == "csv" {
-		for _, poRecord := range poRecords {
-			partNumber := strings.Replace(poRecord.PartNumber, "M", "", -1)
-			partNumber = strings.Replace(partNumber, " ", "", -1)
-			partNumber = strings.Replace(partNumber, "/", "", -1)
-			soStr = soStr + fmt.Sprintf("%s;%.0f;%.0f\n", partNumber, poRecord.QuantityRequired, poRecord.WIPLineOrPONo)
-		}
+		soStr = "Material;Quantity;PO item\n"
 	}
 
-	if fileType == "xfr" {
-		soStr = soStr + "Assist.XFR|AutolineAssist||\n"
-		for _, poRecord := range poRecords {
-			partNumber := strings.Replace(poRecord.PartNumber, "M", "", -1)
-			partNumber = strings.Replace(partNumber, " ", "", -1)
-			partNumber = strings.Replace(partNumber, "/", "", -1)
+	for _, poRecord := range poRecords {
+		partNumber := strings.TrimSpace(poRecord.PartNumber)
+		if partNumber[0] == 'M' {
+			partNumber = partNumber[1:]
+		}
+		partNumber = strings.Replace(partNumber, " ", "", -1)
+		partNumber = strings.Replace(partNumber, "/", "", -1)
+
+		if fileType == "csv" {
+			soStr = soStr + fmt.Sprintf("%s;%.0f;%.5s\n", partNumber, poRecord.QuantityRequired, fmt.Sprintf("%.0f", poRecord.WIPLineOrPONo))
+		}
+		if fileType == "so" {
+			soStr = soStr + fmt.Sprintf("%s\t%.0f\t%.0f\n", partNumber, poRecord.QuantityRequired, poRecord.WIPLineOrPONo)
+		}
+		if fileType == "xfr" {
 			soStr = soStr + fmt.Sprintf("%s||%03.0f|||\n", partNumber, poRecord.QuantityRequired)
 		}
 	}
 
-	return ctx.Blob(http.StatusOK, "text/csv", []byte (soStr))
+	return ctx.Blob(http.StatusOK, "text/csv", []byte(soStr))
 }
 
 func WIPRecords(ctx echo.Context) (err error) {
@@ -101,16 +111,20 @@ func WIPRecords(ctx echo.Context) (err error) {
 		}
 	}
 	if fileType == "csv" {
+		soStr = "Material;Quantity;PO item\n"
+
 		for _, wipRecord := range wipRecords {
 			partNumber := strings.Replace(wipRecord.PartNumber, "M", "", -1)
 			partNumber = strings.Replace(partNumber, " ", "", -1)
 			partNumber = strings.Replace(partNumber, "/", "", -1)
-			soStr = soStr + fmt.Sprintf("%s;%.0f;%.0f\n", partNumber, wipRecord.OrderQuantity, wipRecord.WIPNumber)
+			soStr = soStr + fmt.Sprintf("%s;%.0f;%s\n", partNumber, wipRecord.OrderQuantity, Right(fmt.Sprintf("%.0f", wipRecord.WIPNumber), 6))
 		}
 	}
 
+	// print 5 caracter from the end
+
 	if fileType == "xfr" {
-		soStr = soStr + "Assist.XFR|AutolineAssist||\n"
+		soStr = "Assist.XFR|AutolineAssist||\n"
 		for _, wipRecord := range wipRecords {
 			partNumber := strings.Replace(wipRecord.PartNumber, "M", "", -1)
 			partNumber = strings.Replace(partNumber, " ", "", -1)
@@ -119,7 +133,7 @@ func WIPRecords(ctx echo.Context) (err error) {
 		}
 	}
 
-	return ctx.Blob(http.StatusOK, "text/csv", []byte (soStr))
+	return ctx.Blob(http.StatusOK, "text/csv", []byte(soStr))
 }
 
 func main() {
