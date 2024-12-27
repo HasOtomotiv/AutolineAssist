@@ -47,12 +47,22 @@ func GetPORecords(Loc string, PONumber string) ([]*PORecord, error) {
 	// select WIPLineOrPONo ,QuantityAdvised,QuantityReceived,QuantityRequired,CustomerOrderNo,CustomerCode ,PartNumber,AccountNumber,BINLocation
 	var PORecords []*PORecord
 
-	sqlQuery := fmt.Sprintf(`select WIPLineOrPONo, QuantityRequired, PartNumber from PC_%s_PurchaseTransactions where PurchaseOrderNo= ? order by PartNumberPacked`, Loc)
+	sqlQuery := fmt.Sprintf(`select WIPLineOrPONo, QuantityRequired, PartNumber, HeaderLogMagic001 from PC_%s_PurchaseTransactions where PurchaseOrderNo= ? order by PartNumberPacked`, Loc)
 	log.Debugf("PO Nomber: %s, orgu : %s", PONumber, sqlQuery)
 
 	err := Db.Select(&PORecords, sqlQuery, PONumber)
 
 	return PORecords, err
+}
+
+func GetChassisNumber(Loc string, RecordNumber int32) (string, error) {
+	// select ChassisNumber from SO_10_HeaderLog where RecordNumber=4791348
+	sqlQuery := fmt.Sprintf(`select ChassisNumber from SO_%s_HeaderLog where RecordNumber= ?`, Loc)
+	log.Debugf("RecordNumber: %, orgu : %s", RecordNumber, sqlQuery)
+	chassisNumber := ""
+	//err := Db.Select(&chassisNumber, sqlQuery, RecordNumber)
+	err := Db.Get(&chassisNumber, sqlQuery, RecordNumber)
+	return chassisNumber, err
 }
 
 func GetWIPRecords(Loc string, WIPNumber string) ([]*WIPRecord, error) {
