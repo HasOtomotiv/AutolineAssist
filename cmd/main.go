@@ -35,6 +35,7 @@ func Right(str string, num int) string {
 	num = max - num
 	return str[num:]
 }
+
 func einvoiceinfo(ctx echo.Context) (err error) {
 	docNumber := ctx.Param("DocNumber")
 	ii, err := db.GetInvoiceInfo(docNumber)
@@ -61,7 +62,7 @@ func PORecords(ctx echo.Context) (err error) {
 	log.Infof("Kayıt sayısı: %d", len(poRecords))
 
 	soStr := ""
-	chassisNumberExist := false
+
 	chassisNumbers := make(map[int32]string)
 	for _, poRecord := range poRecords {
 		headerLogMagic := poRecord.HeaderLogMagic
@@ -72,6 +73,9 @@ func PORecords(ctx echo.Context) (err error) {
 				log.Printf("chassisNumber: %s, headerLogMagic: %v\n", chassisNumber, headerLogMagic)
 				if len(chassisNumber) < 17 {
 					chassisNumber = ""
+				}
+				if len(chassisNumber) > 17 {
+					chassisNumber = chassisNumber[:17]
 				}
 				if err != nil {
 					chassisNumber = ""
@@ -84,9 +88,6 @@ func PORecords(ctx echo.Context) (err error) {
 			}
 		}
 		log.Printf("chassisNumber: %s, headerLogMagic: %v\n", chassisNumber, headerLogMagic)
-		if chassisNumber != "" {
-			chassisNumberExist = true
-		}
 
 		partNumber := strings.TrimSpace(poRecord.PartNumber)
 		if partNumber[0] == 'M' {
@@ -96,12 +97,7 @@ func PORecords(ctx echo.Context) (err error) {
 		partNumber = strings.Replace(partNumber, "/", "", -1)
 
 		if fileType == "csv" {
-			if chassisNumberExist {
-				soStr = soStr + fmt.Sprintf("%s;%.0f;%.17s;%.6s\r\n", partNumber, poRecord.QuantityRequired, chassisNumber, fmt.Sprintf("%.0f", poRecord.WIPLineOrPONo))
-			} else {
-				soStr = soStr + fmt.Sprintf("%s;%.0f;%.6s\r\n", partNumber, poRecord.QuantityRequired, fmt.Sprintf("%.0f", poRecord.WIPLineOrPONo))
-			}
-
+			soStr = soStr + fmt.Sprintf("%s;%.0f;%s;%.6s\r\n", partNumber, poRecord.QuantityRequired, chassisNumber, fmt.Sprintf("%.0f", poRecord.WIPLineOrPONo))
 		}
 		if fileType == "so" {
 			soStr = soStr + fmt.Sprintf("%s\t%.0f\t%.0f\n", partNumber, poRecord.QuantityRequired, poRecord.WIPLineOrPONo)
@@ -110,19 +106,15 @@ func PORecords(ctx echo.Context) (err error) {
 			soStr = soStr + fmt.Sprintf("%s||%03.0f|||\n", partNumber, poRecord.QuantityRequired)
 		}
 	}
-
+	clear(chassisNumbers)
 	soHederStr := ""
 	if fileType == "xfr" {
 		soHederStr = "Assist.XFR|AutolineAssist||\n"
 	}
 	if fileType == "csv" {
-		if chassisNumberExist {
-			soHederStr = "Material;Quantity;Vin Number;PO item\r\n"
-		} else {
-			soHederStr = "Material;Quantity;PO item\r\n"
-		}
+		soHederStr = "Material;Quantity;Vin Number;PO item\r\n"
 	}
-	clear(chassisNumbers)
+
 	return ctx.Blob(http.StatusOK, "text/csv", []byte(soHederStr+soStr))
 }
 
@@ -158,8 +150,6 @@ func WIPRecords(ctx echo.Context) (err error) {
 		}
 	}
 
-	// print 5 caracter from the end
-
 	if fileType == "xfr" {
 		soStr = "Assist.XFR|AutolineAssist||\n"
 		for _, wipRecord := range wipRecords {
@@ -177,7 +167,7 @@ func main() {
 	var err error
 	var cfg Config
 
-	log.SetLevel(log.InfoLevel)
+	log.SetLevel(log.WarnLevel)
 
 	log.Infof("Start %s\n", time.Now().Format(time.RFC3339))
 
