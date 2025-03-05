@@ -112,7 +112,7 @@ func PORecords(ctx echo.Context) (err error) {
 		soHederStr = "Assist.XFR|AutolineAssist||\n"
 	}
 	if fileType == "csv" {
-		soHederStr = "Material;Quantity;Vin Number;PO item\r\n"
+		soHederStr = "Part Number;Quantity;Vin Number;PO item\r\n"
 	}
 
 	return ctx.Blob(http.StatusOK, "text/csv", []byte(soHederStr+soStr))
@@ -140,7 +140,7 @@ func WIPRecords(ctx echo.Context) (err error) {
 		}
 	}
 	if fileType == "csv" {
-		soStr = "Material;Quantity;PO item\r\n"
+		soStr = "Part Number;Quantity;PO item\r\n"
 
 		for _, wipRecord := range wipRecords {
 			partNumber := strings.Replace(wipRecord.PartNumber, "M", "", -1)
