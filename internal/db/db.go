@@ -77,3 +77,22 @@ func GetWIPRecords(Loc string, WIPNumber string) ([]*WIPRecord, error) {
 
 	return WIPRecords, err
 }
+
+func GetWIPAllRecords(Loc string, WIPNumber string) ([]*WIPAllRecord, error) {
+	var WIPAllRecords []*WIPAllRecord
+	// select WIPNumber, OrderQuantity, PartNumber, OrderStatus, PartsDiscountCode
+	sqlQuery := fmt.Sprintf(`
+SELECT ll."LabourTypeCode" "LineType", ll.ActualLineNoSort, ll.RTSCode, ll."Description", ll.AllowedTime, ll.RatePerHour "SellingPrice"  from SO_%s_LabourLines ll where (ll.WIPNumber=?) AND (ll.InvoiceStatus<>'X')  
+UNION
+SELECT 'P' "LineType", ActualLineNoSort, PartNumber,"Description", OrderQuantity, SellingPrice  FROM SO_%s_PartsLines  WHERE (WIPNumber=?) AND (OrderStatus<>'D')AND (InvoiceStatus<>'X')
+`, Loc, Loc)
+
+	err := Db.Select(&WIPAllRecords, sqlQuery, WIPNumber, WIPNumber)
+
+	for _, record := range WIPAllRecords {
+		record.Description = DecodeWindows1254(record.Description)
+	}
+	// 	ii.CustCompanyName = DecodeWindows1254(ii.CustCompanyName)
+
+	return WIPAllRecords, err
+}

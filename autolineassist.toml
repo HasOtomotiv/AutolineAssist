@@ -1,2 +1,2 @@
-AutolineDS="DSN=Autoline;UID=odbc-user;PWD=<secret>;SERVER=autoline.daimler.com.tr,790;DBNAME=newhas;LUID=odbc-user;"
+AutolineDS="DSN=Autoline64;UID=odbc-5;PWD=mn5QH70w3;SERVER=autoline.daimler.com.tr,790;DBNAME=newhas;LUID=odbc-5;"
 port=8080

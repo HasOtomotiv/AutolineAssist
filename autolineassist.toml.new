@@ -1,0 +1,2 @@
+AutolineDS="DSN=Autoline;UID=odbc-user;PWD=<secret>;SERVER=autoline.daimler.com.tr,790;DBNAME=newhas;LUID=odbc-user;"
+port=8080

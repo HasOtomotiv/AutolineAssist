@@ -93,6 +93,10 @@ func PORecords(ctx echo.Context) (err error) {
 		if partNumber[0] == 'M' {
 			partNumber = partNumber[1:]
 		}
+
+		if partNumber[0] == 'D' {
+			partNumber = partNumber[1:]
+		}
 		partNumber = strings.Replace(partNumber, " ", "", -1)
 		partNumber = strings.Replace(partNumber, "/", "", -1)
 
@@ -163,6 +167,19 @@ func WIPRecords(ctx echo.Context) (err error) {
 	return ctx.Blob(http.StatusOK, "text/csv", []byte(soStr))
 }
 
+func WIPALLRecords(ctx echo.Context) (err error) {
+
+	loc := ctx.Param("Loc")
+	wipNumber := ctx.Param("WIPNumber")
+
+	wipAllRecords, err := db.GetWIPAllRecords(loc, wipNumber)
+	if err != nil {
+		log.Errorf("error retrieving WIPRecords from DB, Error: %s", err.Error())
+	}
+
+	return ctx.JSON(http.StatusOK, wipAllRecords)
+}
+
 func main() {
 	var err error
 	var cfg Config
@@ -210,6 +227,8 @@ func main() {
 	api.GET("/einvoiceinfo/:DocNumber", einvoiceinfo)
 	api.GET("/getporecords/:Type/:Loc/:PONumber", PORecords)
 	api.GET("/getwiprecords/:Type/:Loc/:WIPNumber", WIPRecords)
+	api.GET("/getwipallrecords/:Loc/:WIPNumber", WIPALLRecords)
+
 	e.GET("/*", echo.WrapHandler(http.FileServer(statikFS)))
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))

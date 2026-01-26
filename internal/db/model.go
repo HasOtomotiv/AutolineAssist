@@ -27,3 +27,12 @@ type WIPRecord struct {
 	OrderQuantity float64 `db:"OrderQuantity"`
 	PartNumber    string  `db:"PartNumber"`
 }
+
+type WIPAllRecord struct {
+	LineType      string  `db:"LineType"`
+	OrderQuantity int     `db:"ActualLineNoSort"`
+	RTSCode       string  `db:"RTSCode"`
+	Description   string  `db:"Description"`
+	AllowedTime   float64 `db:"AllowedTime"`
+	SellingPrice  float64 `db:"SellingPrice"`
+}
